@@ -1,2 +1,2 @@
-# SDM
-Software Development Methodologies
+# CSE
+Components of Software Engineering
