@@ -14,7 +14,7 @@ type TimeResponse struct {
 // JSON Encoding and RFC3339 format
 
 func main() {
-	http.HandleFunc("/", api)
+	http.HandleFunc("/time", api)
 	server := &http.Server{
 		Addr: ":8795",
 	}
