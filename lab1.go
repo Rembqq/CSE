@@ -11,6 +11,8 @@ type TimeResponse struct {
 	Time string `json:"time"`
 }
 
+// JSON Encoding and RFC3339 format
+
 func main() {
 	http.HandleFunc("/", api)
 	server := &http.Server{
