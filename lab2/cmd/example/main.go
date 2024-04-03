@@ -23,6 +23,6 @@ func main() {
 	//       }
 	//       err := handler.Compute()
 
-	res, _ := lab2.PostfixFunc("+ 2 2")
+	res, _ := lab2.PostfixResult("+ 2 2")
 	fmt.Println(res)
 }

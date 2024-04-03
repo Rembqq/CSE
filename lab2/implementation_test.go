@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestPostfixFunc(t *testing.T) {
+func TestPostfixResult(t *testing.T) {
 	for _, tc := range []struct {
 		mathOp string
 		resOp  int
@@ -20,7 +20,7 @@ func TestPostfixFunc(t *testing.T) {
 		{mathOp: "", resOp: 0},                              // відсутність виразу виразу. Тест покаже помилку
 	} {
 		t.Run(tc.mathOp, func(t *testing.T) {
-			if got, textErr := PostfixFunc(tc.mathOp); textErr != "" {
+			if got, textErr := PostfixResult(tc.mathOp); textErr != "" {
 				t.Errorf("Have error: %s. ResOp: %d, got: %d", textErr, tc.resOp, got)
 			} else {
 				fmt.Println("ResOp:", tc.resOp, "got:", got)
@@ -29,36 +29,36 @@ func TestPostfixFunc(t *testing.T) {
 	}
 }
 
-func BenchmarkPostfixFunc(b *testing.B) {
-	b.Run("smal", func(b *testing.B) {
+func BenchmarkPostfixResult(b *testing.B) {
+	b.Run("small", func(b *testing.B) {
 		for k := 0; k < b.N; k++ {
-			if _, textErr := PostfixFunc("4 3 -"); textErr != "" {
+			if _, textErr := PostfixResult("4 3 -"); textErr != "" {
 				b.Errorf("Have error: %s", textErr)
 			}
 		}
 	})
 	b.Run("medium", func(b *testing.B) {
 		for k := 0; k < b.N; k++ {
-			if _, textErr := PostfixFunc("4 3 - 2 * 3 2 ^ +"); textErr != "" {
+			if _, textErr := PostfixResult("4 3 - 2 * 3 2 ^ +"); textErr != "" {
 				b.Errorf("Have error: %s", textErr)
 			}
 		}
 	})
 	b.Run("large", func(b *testing.B) {
 		for k := 0; k < b.N; k++ {
-			if _, textErr := PostfixFunc("4 3 - 2 * 3 2 ^ + 10 1 * - 3 +"); textErr != "" {
+			if _, textErr := PostfixResult("4 3 - 2 * 3 2 ^ + 10 1 * - 3 +"); textErr != "" {
 				b.Errorf("Have error: %s", textErr)
 			}
 		}
 	})
 }
 
-func ExamplePostfixFunc() {
-	res1, _ := PostfixFunc("4 3 - 2 * 3 2 ^ + 10 1 * - 3 +")
+func ExamplePostfixResult() {
+	res1, _ := PostfixResult("4 3 - 2 * 3 2 ^ + 10 1 * - 3 +")
 	fmt.Println(res1)
-	res2, _ := PostfixFunc("4 3 - 2 * 3 2 ^ +")
+	res2, _ := PostfixResult("4 3 - 2 * 3 2 ^ +")
 	fmt.Println(res2)
-	res3, _ := PostfixFunc("4 3 -")
+	res3, _ := PostfixResult("4 3 -")
 	fmt.Println(res3)
 	// Output:
 	// 4

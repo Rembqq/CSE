@@ -4,76 +4,66 @@ import (
 	"strconv"
 )
 
-func opNum(i int, a [15]int) (int, int, int, [15]int) {
-	i--
-	n2 := a[i]
-	a[i] = 0
-	i--
-	n1 := a[i]
-	return n1, n2, i, a
+// takes last 2 nums from numArray
+func opNum(index int, numArray [15]int) (int, int, int, [15]int) {
+	index--
+	n2 := numArray[index]
+	numArray[index] = 0
+	index--
+	n1 := numArray[index]
+	return n1, n2, index, numArray
 }
 
-func opNumRes(i int, r int, a [15]int) (int, [15]int) {
-	a[i] = r
-	i++
-	return i, a
+// operator number result
+func opNumRes(index int, result int, numArray [15]int) (int, [15]int) {
+	numArray[index] = result
+	index++
+	return index, numArray
 }
 
-func convText(i int, a [15]int, tN string) (int, [15]int, string, string) {
-	conNum, err1 := strconv.Atoi(tN)
+func convText(index int, numArray [15]int, textNum string) (int, [15]int, string, string) {
+	conNum, err1 := strconv.Atoi(textNum)
 	e := ""
 	if err1 != nil {
 		e = "Помилка конвертації тексту"
 	} else {
-		a[i] = conNum
-		i++
-		tN = ""
+		numArray[index] = conNum
+		index++
+		textNum = ""
 	}
-	return i, a, tN, e
+	return index, numArray, textNum, e
 }
 
-func PostfixFunc(input string) (int, string) {
+func PostfixResult(input string) (int, string) {
 
 	textNum := ""
 	var numArray [15]int
 	indexArray := 1
+
+	// Operands
 	var num1 int
 	var num2 int
+
 	var res int
-	s1 := '+'
-	s2 := '-'
-	s3 := '*'
-	s4 := '/'
-	s5 := '^'
 	err := ""
 
+	// Operators
+	opPlus := '+'
+	opMinus := '-'
+	opMultiplication := '*'
+	opDivision := '/'
+	opPowerOf := '^'
+
 	if input != "" {
-		numArray[0] = 0
+		// numArray[0] = 0
 		for c := range input {
 			if err == "" {
 				if input[c] != ' ' {
-					if input[c] != byte(s1) && input[c] != byte(s2) && input[c] != byte(s3) && input[c] != byte(s4) && input[c] != byte(s5) {
+					if input[c] != byte(opPlus) && input[c] != byte(opMinus) && input[c] != byte(opMultiplication) &&
+						input[c] != byte(opDivision) && input[c] != byte(opPowerOf) {
 						switch input[c] {
-						case '0':
-							textNum += "0"
-						case '1':
-							textNum += "1"
-						case '2':
-							textNum += "2"
-						case '3':
-							textNum += "3"
-						case '4':
-							textNum += "4"
-						case '5':
-							textNum += "5"
-						case '6':
-							textNum += "6"
-						case '7':
-							textNum += "7"
-						case '8':
-							textNum += "8"
-						case '9':
-							textNum += "9"
+						case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
+							textNum += string(input[c])
 						default:
 							err = "У виразі присутні недопустимі символи"
 						}
@@ -81,25 +71,20 @@ func PostfixFunc(input string) (int, string) {
 						if textNum != "" {
 							indexArray, numArray, textNum, err = convText(indexArray, numArray, textNum)
 						}
+
+						num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+
 						switch input[c] {
-						case byte(s1):
-							num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+						case byte(opPlus):
 							res = num1 + num2
-							indexArray, numArray = opNumRes(indexArray, res, numArray)
-						case byte(s2):
-							num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+						case byte(opMinus):
 							res = num1 - num2
-							indexArray, numArray = opNumRes(indexArray, res, numArray)
-						case byte(s3):
-							num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+						case byte(opMultiplication):
 							res = num1 * num2
-							indexArray, numArray = opNumRes(indexArray, res, numArray)
-						case byte(s4):
-							num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+						case byte(opDivision):
 							res = num1 / num2
-							indexArray, numArray = opNumRes(indexArray, res, numArray)
-						case byte(s5):
-							num1, num2, indexArray, numArray = opNum(indexArray, numArray)
+						case byte(opPowerOf):
+							// Math.pow is omitted because of its resource intensity
 							if num2 == 0 {
 								res = 1
 							}
@@ -111,10 +96,11 @@ func PostfixFunc(input string) (int, string) {
 							} else {
 								res = num1
 							}
-							indexArray, numArray = opNumRes(indexArray, res, numArray)
 						default:
 							err = "У виразі присутні недопустимі оператори"
-
+						}
+						if err == "" {
+							indexArray, numArray = opNumRes(indexArray, res, numArray)
 						}
 					}
 				} else {

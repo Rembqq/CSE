@@ -21,7 +21,7 @@ func (ch *ComputeHandler) Compute(input, pkey, wkey string) string {
 		if merr1 != nil {
 			err = "Помилка читання файлу"
 		} else {
-			res, err = PostfixFunc(string(data))
+			res, err = PostfixResult(string(data))
 			if err == "" {
 				if wkey != "" {
 					pw := filepath.Join(ch.YourPath, wkey)
@@ -36,7 +36,7 @@ func (ch *ComputeHandler) Compute(input, pkey, wkey string) string {
 		}
 	} else {
 		if input != "" {
-			res, err = PostfixFunc(input)
+			res, err = PostfixResult(input)
 			if err == "" {
 				if wkey != "" {
 					pw := filepath.Join(ch.YourPath, wkey)
