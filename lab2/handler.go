@@ -30,7 +30,7 @@ func (ch *ComputeHandler) Compute(input, pkey, wkey string) string {
 						err = "Помилка запису"
 					}
 				} else {
-					fmt.Printf("Відповідь: %d", res)
+					fmt.Println("Відповідь: ", res)
 				}
 			}
 		}
@@ -45,7 +45,7 @@ func (ch *ComputeHandler) Compute(input, pkey, wkey string) string {
 						err = "Помилка запису"
 					}
 				} else {
-					fmt.Printf("Відповідь: %d", res)
+					fmt.Println("Відповідь: ", res)
 				}
 			}
 		} else {

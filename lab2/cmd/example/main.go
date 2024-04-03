@@ -3,26 +3,45 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
 
 	lab2 "github.com/Rembqq/CSE"
 )
 
 var (
-	inputExpression = flag.String("e", "", "Expression to compute")
-	// TODO: Add other flags support for input and output configuration.
+	inputFile    = flag.Bool("f", false, "Вказування файлу з виразом")
+	inputConsole = flag.Bool("e", false, "Консольне введення")
+	outputFile   = flag.Bool("o", false, "Запис виразу у файл")
 )
 
 func main() {
 	flag.Parse()
 
-	// TODO: Change this to accept input from the command line arguments as described in the task and
-	//       output the results using the ComputeHandler instance.
-	//       handler := &lab2.ComputeHandler{
-	//           Input: {construct io.Reader according the command line parameters},
-	//           Output: {construct io.Writer according the command line parameters},
-	//       }
-	//       err := handler.Compute()
+	var input, pkey, wkey string = "", "", ""
 
-	res, _ := lab2.PostfixFunc("+ 2 2")
-	fmt.Println(res)
+	if *inputFile {
+		pkey = flag.Arg(0)
+		if *outputFile {
+			wkey = flag.Arg(1)
+		} else {
+			wkey = ""
+		}
+	}
+
+	if *inputConsole {
+		input = flag.Arg(0)
+		if *outputFile {
+			wkey = flag.Arg(1)
+		} else {
+			wkey = ""
+		}
+	}
+
+	database := lab2.ComputeHandler{YourPath: "."}
+	err := database.Compute(input, pkey, wkey)
+	if err != "" {
+		fmt.Fprintln(os.Stderr, "Помилка: ", err)
+	} else {
+		fmt.Println("Виконання успішне")
+	}
 }
