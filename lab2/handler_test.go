@@ -20,8 +20,8 @@ func TestCompute(t *testing.T) {
 		{name: "1", input: "4 3 -", pkey: "", wkey: "result.txt"},
 		{name: "2", input: "4 3 -", pkey: "", wkey: ""},
 		{name: "3", input: "", pkey: "input.txt", wkey: ""},
-		//{name: "4", input: "", pkey: "inp.txt", wkey: ""}, // неправильно вказаний файл для читання
-		//{name: "5", input: "", pkey: "", wkey: ""},        // невказано виразу для обрахунку
+		{name: "4", input: "", pkey: "inp.txt", wkey: ""}, // неправильно вказаний файл для читання
+		{name: "5", input: "", pkey: "", wkey: ""},        // невказано виразу для обрахунку
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := ch.Compute(tc.input, tc.pkey, tc.wkey)

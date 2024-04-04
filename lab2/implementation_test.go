@@ -15,9 +15,9 @@ func TestPostfixResult(t *testing.T) {
 		{mathOp: "4 3 - 2 * 3 2 ^ +", resOp: 11},
 		{mathOp: "4 3 - 2 *", resOp: 2},
 		{mathOp: "4 3 -", resOp: 1},
-		//{mathOp: "4 3 - 2 * 3 2 ^ + 10 1 * - 3 ", resOp: 4}, // невірний запис виразу. Тест покаже помилку
-		//{mathOp: "4 3 - 2 * 3 ^ +", resOp: 11},              // невірний запис виразу. Тест покаже помилку
-		//{mathOp: "", resOp: 0},                              // відсутність виразу виразу. Тест покаже помилку
+		{mathOp: "4 3 - 2 * 3 2 ^ + 10 1 * - 3 ", resOp: 4}, // невірний запис виразу. Тест покаже помилку
+		{mathOp: "4 3 - 2 * 3 ^ +", resOp: 11},              // невірний запис виразу. Тест покаже помилку
+		{mathOp: "", resOp: 0},                              // відсутність виразу виразу. Тест покаже помилку
 	} {
 		t.Run(tc.mathOp, func(t *testing.T) {
 			if got, textErr := PostfixResult(tc.mathOp); textErr != "" {
