@@ -18,6 +18,8 @@ func main() {
 	)
 
 	//pv.Debug = true
+	pv.WindowWidth = 800  // ширина вікна, пікселів
+	pv.WindowHeight = 800 // висота вікна, пікселів
 	pv.Title = "Simple painter"
 
 	pv.OnScreenReady = opLoop.Start

@@ -18,6 +18,8 @@ import (
 
 type Visualizer struct {
 	Title         string
+	WindowWidth   int
+	WindowHeight  int
 	Debug         bool
 	OnScreenReady func(s screen.Screen)
 
@@ -43,7 +45,9 @@ func (pw *Visualizer) Update(t screen.Texture) {
 
 func (pw *Visualizer) run(s screen.Screen) {
 	w, err := s.NewWindow(&screen.NewWindowOptions{
-		Title: pw.Title,
+		Width:  pw.WindowWidth,
+		Height: pw.WindowHeight,
+		Title:  pw.Title,
 	})
 	if err != nil {
 		log.Fatal("Failed to initialize the app window:", err)
@@ -131,12 +135,26 @@ func (pw *Visualizer) handleEvent(e any, t screen.Texture) {
 }
 
 func (pw *Visualizer) drawDefaultUI() {
-	pw.w.Fill(pw.sz.Bounds(), color.Black, draw.Src) // Фон.
-
 	// TODO: Змінити колір фону та додати відображення фігури у вашому варіанті.
+	pw.w.Fill(pw.sz.Bounds(), color.RGBA{R: 0, G: 255, B: 0, A: 255}, draw.Src) // фон зелений
 
-	// Малювання білої рамки.
-	for _, br := range imageutil.Border(pw.sz.Bounds(), 10) {
+	pw.XFigureDraw()
+
+	for _, br := range imageutil.Border(pw.sz.Bounds(), 5) { // Малювання білої рамки.
 		pw.w.Fill(br, color.White, draw.Src)
 	}
+}
+
+func (pw *Visualizer) XFigureDraw() { // малює хрестик по центру вікна
+	pw.pos.Min.X = 225 // лівий верхній кут, початкова координата Х
+	pw.pos.Min.Y = 335 // лівий верхній кут, початкова координата У
+	pw.pos.Max.X = 575 // правий нижній кут, кінцева координата Х
+	pw.pos.Max.Y = 465 // правий нижній кут, кінцева координата У
+	pw.w.Fill(pw.pos.Bounds(), color.RGBA{R: 255, G: 0, B: 0, A: 255}, draw.Src)
+
+	pw.pos.Min.X = 335
+	pw.pos.Min.Y = 225
+	pw.pos.Max.X = 465
+	pw.pos.Max.Y = 575
+	pw.w.Fill(pw.pos.Bounds(), color.RGBA{R: 255, G: 0, B: 0, A: 255}, draw.Src)
 }
