@@ -6,7 +6,6 @@ import (
 	"log"
 
 	"golang.org/x/exp/shiny/driver"
-	"golang.org/x/exp/shiny/imageutil"
 	"golang.org/x/exp/shiny/screen"
 	"golang.org/x/image/draw"
 	"golang.org/x/mobile/event/key"
@@ -119,7 +118,7 @@ func (pw *Visualizer) handleEvent(e any, t screen.Texture) {
 
 	case mouse.Event:
 		if t == nil {
-			// TODO: Реалізувати реакцію на натискання кнопки миші.
+			//TODO: Реалізувати реакцію на натискання кнопки миші.
 		}
 
 	case paint.Event:
@@ -136,25 +135,34 @@ func (pw *Visualizer) handleEvent(e any, t screen.Texture) {
 
 func (pw *Visualizer) drawDefaultUI() {
 	// TODO: Змінити колір фону та додати відображення фігури у вашому варіанті.
-	pw.w.Fill(pw.sz.Bounds(), color.RGBA{R: 0, G: 255, B: 0, A: 255}, draw.Src) // фон зелений
-
-	pw.XFigureDraw()
-
-	for _, br := range imageutil.Border(pw.sz.Bounds(), 5) { // Малювання білої рамки.
-		pw.w.Fill(br, color.White, draw.Src)
-	}
+	pw.WindowColor(255, 255, 255, 255)                  // білий фон екрану
+	pw.RectFigureDraw(200, 200, 600, 600, 0, 0, 0, 255) // малює чорний квадрат по центру екрану
+	pw.XFigureDraw(0.5, 0.5)                            // малює хрестик по центу  екрану
+	pw.WindowColor(0, 255, 0, 255)                      // зелений фон екрану
+	pw.XFigureDraw(0.6, 0.6)                            // малює хрестик трішки нижче та правіше від центру екрану
+	//for _, br := range imageutil.Border(pw.sz.Bounds(), 5) { // Малювання білої рамки.
+	//pw.w.Fill(br, color.White, draw.Src)
+	//}
 }
 
-func (pw *Visualizer) XFigureDraw() { // малює хрестик по центру вікна
-	pw.pos.Min.X = 225 // лівий верхній кут, початкова координата Х
-	pw.pos.Min.Y = 335 // лівий верхній кут, початкова координата У
-	pw.pos.Max.X = 575 // правий нижній кут, кінцева координата Х
-	pw.pos.Max.Y = 465 // правий нижній кут, кінцева координата У
-	pw.w.Fill(pw.pos.Bounds(), color.RGBA{R: 255, G: 0, B: 0, A: 255}, draw.Src)
+func (pw *Visualizer) XFigureDraw(x, y float32) { // малює хрестик по координатам що вказують на його центр
+	cordinateX := int(x * 800)
+	cordinateY := int(y * 800)
+	xFigureWidth, xFigureHeight := 170, 70 // половини розмірів довжини та висоти прямокутника
+	startX1, startY1, endX1, endY1 := cordinateX-xFigureWidth, cordinateY-xFigureHeight, cordinateX+xFigureWidth, cordinateY+xFigureHeight
+	pw.RectFigureDraw(startX1, startY1, endX1, endY1, 255, 0, 0, 255)
+	startX2, startY2, endX2, endY2 := cordinateX-xFigureHeight, cordinateY-xFigureWidth, cordinateX+xFigureHeight, cordinateY+xFigureWidth
+	pw.RectFigureDraw(startX2, startY2, endX2, endY2, 255, 0, 0, 255)
+}
 
-	pw.pos.Min.X = 335
-	pw.pos.Min.Y = 225
-	pw.pos.Max.X = 465
-	pw.pos.Max.Y = 575
-	pw.w.Fill(pw.pos.Bounds(), color.RGBA{R: 255, G: 0, B: 0, A: 255}, draw.Src)
+func (pw *Visualizer) RectFigureDraw(x1, y1, x2, y2 int, r, g, b, a byte) {
+	pw.pos.Min.X = x1 // лівий верхній кут, початкова координата Х
+	pw.pos.Min.Y = y1 // лівий верхній кут, початкова координата У
+	pw.pos.Max.X = x2 // правий нижній кут, кінцева координата Х
+	pw.pos.Max.Y = y2 // правий нижній кут, кінцева координата У
+	pw.w.Fill(pw.pos.Bounds(), color.RGBA{R: r, G: g, B: b, A: a}, draw.Src)
+}
+
+func (pw *Visualizer) WindowColor(r, g, b, a byte) {
+	pw.w.Fill(pw.sz.Bounds(), color.RGBA{R: r, G: g, B: b, A: a}, draw.Src)
 }
