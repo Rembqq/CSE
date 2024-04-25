@@ -1,6 +1,7 @@
 package painter
 
 import (
+	"image"
 	"image/color"
 
 	"golang.org/x/exp/shiny/screen"
@@ -45,4 +46,27 @@ func WhiteFill(t screen.Texture) {
 // GreenFill зафарбовує тестуру у зелений колір. Може бути викоистана як Operation через OperationFunc(GreenFill).
 func GreenFill(t screen.Texture) {
 	t.Fill(t.Bounds(), color.RGBA{G: 0xff, A: 0xff}, screen.Src)
+}
+
+func XFigureDraw(t screen.Texture, x, y float32) { // малює червоний хрестик по координатам що вказують на його центр
+	cordinateX := int(x * 800)
+	cordinateY := int(y * 800)
+	xFigureWidth, xFigureHeight := 170, 70 // половини розмірів довжини та висоти прямокутника
+	startX1, startY1, endX1, endY1 := cordinateX-xFigureWidth, cordinateY-xFigureHeight, cordinateX+xFigureWidth, cordinateY+xFigureHeight
+	RectFigureDraw(t, startX1, startY1, endX1, endY1, 200, 0, 0, 200)
+	startX2, startY2, endX2, endY2 := cordinateX-xFigureHeight, cordinateY-xFigureWidth, cordinateX+xFigureHeight, cordinateY+xFigureWidth
+	RectFigureDraw(t, startX2, startY2, endX2, endY2, 200, 0, 0, 200)
+}
+
+func BlackRect(t screen.Texture, x1, y1, x2, y2 int) { // малює чорний прямокутник по координатам що вказують
+	RectFigureDraw(t, x1, y1, x2, y2, 0, 0, 0, 0)
+}
+
+func RectFigureDraw(t screen.Texture, x1, y1, x2, y2 int, r, g, b, a byte) {
+	var pos image.Rectangle
+	pos.Min.X = x1 // лівий верхній кут, початкова координата Х
+	pos.Min.Y = y1 // лівий верхній кут, початкова координата У
+	pos.Max.X = x2 // правий нижній кут, кінцева координата Х
+	pos.Max.Y = y2 // правий нижній кут, кінцева координата У
+	t.Fill(pos.Bounds(), color.RGBA{R: r, G: g, B: b, A: a}, screen.Src)
 }

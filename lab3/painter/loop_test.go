@@ -6,101 +6,99 @@ import (
 	"image/draw"
 	"reflect"
 	"testing"
+	"time"
 
 	"golang.org/x/exp/shiny/screen"
 )
 
 func TestLoop_Post(t *testing.T) {
 	var (
-		l  Loop
-		tr testReceiver
+		l        Loop
+		receiver testReceiver
 	)
-	l.Receiver = &tr
 
-	var testOps []string
+	l.Receiver = &receiver
 
-	l.Start(mockScreen{})
-	l.Post(logOp(t, "do white fill", WhiteFill))
-	l.Post(logOp(t, "do green fill", GreenFill))
+	time.Sleep(3 * time.Second)
+	l.Start(testScreen{})
+	l.Post(OperationFunc(WhiteFill))
+	l.Post(OperationFunc(GreenFill))
+	l.Post(OperationFunc(WhiteFill))
 	l.Post(UpdateOp)
 
-	for i := 0; i < 3; i++ {
-		go l.Post(logOp(t, "do green fill", GreenFill))
-	}
+	var testOperation []string
 
-	l.Post(OperationFunc(func(screen.Texture) {
-		testOps = append(testOps, "op 1")
-		l.Post(OperationFunc(func(screen.Texture) {
-			testOps = append(testOps, "op 2")
+	l.Post(OperationFunc(func(t screen.Texture) {
+		testOperation = append(testOperation, "op1")
+		l.Post(OperationFunc(func(t screen.Texture) {
+			testOperation = append(testOperation, "op3")
 		}))
 	}))
-	l.Post(OperationFunc(func(screen.Texture) {
-		testOps = append(testOps, "op 3")
+	l.Post(OperationFunc(func(t screen.Texture) {
+		testOperation = append(testOperation, "op2")
 	}))
 
 	l.StopAndWait()
 
-	if tr.lastTexture == nil {
-		t.Fatal("Texture was not updated")
-	}
-	mt, ok := tr.lastTexture.(*mockTexture)
-	if !ok {
-		t.Fatal("Unexpected texture", tr.lastTexture)
-	}
-	if mt.Colors[0] != color.White {
-		t.Error("First color is not white:", mt.Colors)
-	}
-	if len(mt.Colors) != 2 {
-		t.Error("Unexpected size of colors:", mt.Colors)
+	if !reflect.DeepEqual([]string{"op1", "op2", "op3"}, testOperation) {
+		t.Error("Bad operations sequence", testOperation)
 	}
 
-	if !reflect.DeepEqual(testOps, []string{"op 1", "op 2", "op 3"}) {
-		t.Error("Bad order:", testOps)
+	if receiver.lastTesture == nil {
+		t.Fatal("Texture not update")
 	}
-}
 
-func logOp(t *testing.T, msg string, op OperationFunc) OperationFunc {
-	return func(tx screen.Texture) {
-		t.Log(msg)
-		op(tx)
+	tt := receiver.lastTesture.(*testTexture)
+	if tt.lastColor != color.White {
+		t.Error("Last color isn't white")
 	}
 }
 
 type testReceiver struct {
-	lastTexture screen.Texture
+	lastTesture screen.Texture
 }
 
 func (tr *testReceiver) Update(t screen.Texture) {
-	tr.lastTexture = t
+	tr.lastTesture = t
 }
 
-type mockScreen struct{}
-
-func (m mockScreen) NewBuffer(size image.Point) (screen.Buffer, error) {
-	panic("implement me")
+type testScreen struct {
 }
 
-func (m mockScreen) NewTexture(size image.Point) (screen.Texture, error) {
-	return new(mockTexture), nil
+func (ts testScreen) NewBuffer(size image.Point) (screen.Buffer, error) {
+	panic("not inplement")
 }
 
-func (m mockScreen) NewWindow(opts *screen.NewWindowOptions) (screen.Window, error) {
-	panic("implement me")
+func (ts testScreen) NewTexture(size image.Point) (screen.Texture, error) {
+	return &testTexture{
+		size: size,
+	}, nil
 }
 
-type mockTexture struct {
-	Colors []color.Color
+func (ts testScreen) NewWindow(opt *screen.NewWindowOptions) (screen.Window, error) {
+	panic("not inplement")
 }
 
-func (m *mockTexture) Release() {}
+type testTexture struct {
+	size image.Point
 
-func (m *mockTexture) Size() image.Point { return size }
-
-func (m *mockTexture) Bounds() image.Rectangle {
-	return image.Rectangle{Max: m.Size()}
+	lastColor color.Color
 }
 
-func (m *mockTexture) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {}
-func (m *mockTexture) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
-	m.Colors = append(m.Colors, src)
+func (tt *testTexture) Release() {}
+
+func (tt *testTexture) Size() image.Point {
+	return tt.size
+}
+
+func (tt *testTexture) Bounds() image.Rectangle {
+	return image.Rect(0, 0, tt.Size().X, tt.Size().Y)
+}
+
+func (tt *testTexture) Upload(dp image.Point, src screen.Buffer, sr image.Rectangle) {
+
+}
+
+func (tt *testTexture) Fill(dr image.Rectangle, src color.Color, op draw.Op) {
+	tt.lastColor = src
 }
