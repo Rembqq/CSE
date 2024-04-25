@@ -48,9 +48,10 @@ func GreenFill(t screen.Texture) {
 	t.Fill(t.Bounds(), color.RGBA{G: 0xff, A: 0xff}, screen.Src)
 }
 
-func XFigureDraw(t screen.Texture, x, y float32) { // малює червоний хрестик по координатам що вказують на його центр
-	cordinateX := int(x * 800)
-	cordinateY := int(y * 800)
+// малює червоний хрестик по координатам що вказують на його центр
+func XFigureDraw(t screen.Texture /*, x, y float32*/) {
+	cordinateX := int(0.5 * 800)
+	cordinateY := int(0.5 * 800)
 	xFigureWidth, xFigureHeight := 170, 70 // половини розмірів довжини та висоти прямокутника
 	startX1, startY1, endX1, endY1 := cordinateX-xFigureWidth, cordinateY-xFigureHeight, cordinateX+xFigureWidth, cordinateY+xFigureHeight
 	RectFigureDraw(t, startX1, startY1, endX1, endY1, 200, 0, 0, 200)
@@ -58,8 +59,19 @@ func XFigureDraw(t screen.Texture, x, y float32) { // малює червони�
 	RectFigureDraw(t, startX2, startY2, endX2, endY2, 200, 0, 0, 200)
 }
 
-func BlackRect(t screen.Texture, x1, y1, x2, y2 int) { // малює чорний прямокутник по координатам що вказують
-	RectFigureDraw(t, x1, y1, x2, y2, 0, 0, 0, 0)
+func XFigureDraw2(t screen.Texture /*, x, y float32*/) {
+	cordinateX := int(0.52 * 800)
+	cordinateY := int(0.52 * 800)
+	xFigureWidth, xFigureHeight := 170, 70 // половини розмірів довжини та висоти прямокутника
+	startX1, startY1, endX1, endY1 := cordinateX-xFigureWidth, cordinateY-xFigureHeight, cordinateX+xFigureWidth, cordinateY+xFigureHeight
+	RectFigureDraw(t, startX1, startY1, endX1, endY1, 200, 0, 0, 200)
+	startX2, startY2, endX2, endY2 := cordinateX-xFigureHeight, cordinateY-xFigureWidth, cordinateX+xFigureHeight, cordinateY+xFigureWidth
+	RectFigureDraw(t, startX2, startY2, endX2, endY2, 200, 0, 0, 200)
+}
+
+// малює чорний прямокутник по координатам що вказують
+func BlackRect(t screen.Texture /*, x1, y1, x2, y2 int*/) {
+	RectFigureDraw(t, 200, 200, 600, 600, 0, 0, 0, 0)
 }
 
 func RectFigureDraw(t screen.Texture, x1, y1, x2, y2 int, r, g, b, a byte) {

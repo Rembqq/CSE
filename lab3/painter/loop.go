@@ -21,84 +21,94 @@ type Loop struct {
 
 	mq messageQueue
 
-	stop    chan struct{}
-	stopReq bool
+	stop    chan struct{} // створення каналу для закриття потоку обробки операцій
+	stopReq bool          // змінна що вказує на завершення виконнання операцій
 }
 
-var size = image.Pt(400, 400)
+var size = image.Pt(800, 800)
 
-// Start запускає цикл подій. Цей метод потрібно запустити до того, як викликати на ньому будь-які інші методи.
+// запускає цикл подій. Цей метод потрібно запустити до того, як викликати на ньому будь-які інші методи.
 func (l *Loop) Start(s screen.Screen) {
 	l.next, _ = s.NewTexture(size)
 	l.prev, _ = s.NewTexture(size)
 
-	// TODO: стартувати цикл подій.
-	l.stop = make(chan struct{})
-	go func() {
-		for !l.stopReq || !l.mq.empty() {
-			op := l.mq.pull()
+	l.stop = make(chan struct{}) // ініціалізує канал
 
-			update := op.Do(l.next)
-			if update {
-				l.Receiver.Update(l.next)
+	go func() {
+		for !l.stopReq || !l.mq.empty() { // перевіряє чи не припиняти обробку повідомлень та чи масив операцій не пустий
+			op := l.mq.pull() // дістає операцію з масиву
+
+			update := op.Do(l.next) // виконує операцію
+			if update {             // перевіряє чи відбулися зміни
+				l.Receiver.Update(l.next) // якщо відбулися оновлює текстуру
 				l.next, l.prev = l.prev, l.next
 			}
 		}
-		close(l.stop)
+		close(l.stop) // закриває канал, та припиняє потік
+		l.stop = nil  // кажемо що в каналі немає сигналів
 	}()
 }
 
-// Post додає нову операцію у внутрішню чергу.
+// додає нову операцію у внутрішню чергу.
 func (l *Loop) Post(op Operation) {
-	l.mq.push(op)
+	l.mq.push(op) //записує операцю в чергу
 }
 
-// StopAndWait сигналізує про необхідність завершити цикл та блокується до моменту його повної зупинки.
+// сигналізує про необхідність завершити цикл та блокується до моменту його повної зупинки.
 func (l *Loop) StopAndWait() {
-	l.Post(OperationFunc(func(t screen.Texture) {
-		l.stopReq = true
+	l.Post(OperationFunc(func(t screen.Texture) { //викликає функцію яка виконується
+		l.stopReq = true // вказує що потрібно завершити виконання операцій
 	}))
-	<-l.stop
+	<-l.stop // передає сигнал
 }
 
+// черга повідомлень
 type messageQueue struct {
-	pushSignal chan struct{}
-	mu         sync.Mutex
-	data       []Operation
+	pushSignal chan struct{} //створення каналу для сигналу, потрібен щоб програма при доставанні
+	// операцій з черги не зверталася до пустого масиву операцій
+
+	mu sync.Mutex // для роботи з потоками (закриття, відкритя)
+
+	data []Operation // масив операцій де створюється черга
 }
 
+// записує повідомлення у чергу
 func (mq *messageQueue) push(op Operation) {
-	mq.mu.Lock()
-	defer mq.mu.Unlock()
+	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
+	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
+	// потрібно для коректної взаємодії між потоками
+	// інакше потоки будуть пошкоджувати один одному данні
 
-	mq.data = append(mq.data, op)
+	mq.data = append(mq.data, op) // додає у масив операцій операцію
 
-	if mq.pushSignal != nil {
-		close(mq.pushSignal)
-		mq.pushSignal = nil
+	if mq.pushSignal != nil { // перевіряє чи був сигнал
+		close(mq.pushSignal) // якщо сигнал був, то закриває канал (припиняє передачу сигналу)
+		mq.pushSignal = nil  // вказуємо що канал немає сигналів
 	}
 }
 
+// дістає повідомлення з черги
 func (mq *messageQueue) pull() Operation {
-	mq.mu.Lock()
-	defer mq.mu.Unlock()
+	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
+	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
-	for len(mq.data) == 0 {
-		mq.pushSignal = make(chan struct{})
-		mq.mu.Unlock()
-		<-mq.pushSignal
-		mq.mu.Lock()
+	for len(mq.data) == 0 { // перевіряємо чи масив операцій пустий (чи він nil)
+		mq.pushSignal = make(chan struct{}) // ініціалізуємо канал
+		mq.mu.Unlock()                      // відкриваємо потік щоб взаємодіяти з каналом
+		<-mq.pushSignal                     // створює сигнал, після чого виконується push, який робить масив з однією операцією
+		mq.mu.Lock()                        // закриває потік, після чого знову робить перевірку масиву (теоретичний результат, масив буде не пустим)
 	}
 
-	res := mq.data[0]
-	mq.data[0] = nil
-	mq.data = mq.data[1:]
-	return res
+	res := mq.data[0]     //дістає операцію з  масиву
+	mq.data[0] = nil      //звільняє пам'ять у масиві де була взята операція
+	mq.data = mq.data[1:] // каже що масив починається  з другого аргументу
+	return res            //  повертає операцію яку потрібно виконати
 }
 
+// перевіряє чи черга пуста
 func (mq *messageQueue) empty() bool {
-	mq.mu.Lock()
-	defer mq.mu.Unlock()
+	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
+	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
-	return len(mq.data) == 0
+	return len(mq.data) == 0 // якщо черга пуста повертає true
 }
