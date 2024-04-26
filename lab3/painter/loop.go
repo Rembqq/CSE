@@ -1,6 +1,7 @@
 package painter
 
 import (
+	"fmt"
 	"image"
 	"sync"
 
@@ -36,10 +37,15 @@ func (l *Loop) Start(s screen.Screen) {
 
 	go func() {
 		for !l.stopReq || !l.mq.empty() { // перевіряє чи не припиняти обробку повідомлень та чи масив операцій не пустий
-			op := l.mq.pull() // дістає операцію з масиву
+			op, c := l.mq.pull() // дістає операцію з масиву
 
-			update := op.Do(l.next) // виконує операцію
-			if update {             // перевіряє чи відбулися зміни
+			fmt.Println(len(l.mq.data), "p")
+			fmt.Println(len(l.mq.dataCord), "l")
+			fmt.Println(c.X1, c.Y1, c.X2, c.Y2, "m")
+
+			update := op.Do(l.next, c) // виконує операцію
+			fmt.Println(update)
+			if update { // перевіряє чи відбулися зміни
 				l.Receiver.Update(l.next) // якщо відбулися оновлює текстуру
 				l.next, l.prev = l.prev, l.next
 			}
@@ -54,9 +60,14 @@ func (l *Loop) Post(op Operation) {
 	l.mq.push(op) //записує операцю в чергу
 }
 
+// додає нову координату у внутрішню чергу.
+func (l *Loop) PostCord(c Cord) {
+	l.mq.pushCord(c)
+}
+
 // сигналізує про необхідність завершити цикл та блокується до моменту його повної зупинки.
 func (l *Loop) StopAndWait() {
-	l.Post(OperationFunc(func(t screen.Texture) { //викликає функцію яка виконується
+	l.Post(OperationFunc(func(t screen.Texture, c Cord) { //викликає функцію яка виконується
 		l.stopReq = true // вказує що потрібно завершити виконання операцій
 	}))
 	<-l.stop // передає сигнал
@@ -67,9 +78,13 @@ type messageQueue struct {
 	pushSignal chan struct{} //створення каналу для сигналу, потрібен щоб програма при доставанні
 	// операцій з черги не зверталася до пустого масиву операцій
 
+	pushCordSignal chan struct{}
+
 	mu sync.Mutex // для роботи з потоками (закриття, відкритя)
 
 	data []Operation // масив операцій де створюється черга
+
+	dataCord []Cord // масив координат де створюється черга
 }
 
 // записує повідомлення у чергу
@@ -88,7 +103,7 @@ func (mq *messageQueue) push(op Operation) {
 }
 
 // дістає повідомлення з черги
-func (mq *messageQueue) pull() Operation {
+func (mq *messageQueue) pull() (Operation, Cord) {
 	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
 	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
@@ -102,7 +117,19 @@ func (mq *messageQueue) pull() Operation {
 	res := mq.data[0]     //дістає операцію з  масиву
 	mq.data[0] = nil      //звільняє пам'ять у масиві де була взята операція
 	mq.data = mq.data[1:] // каже що масив починається  з другого аргументу
-	return res            //  повертає операцію яку потрібно виконати
+
+	for len(mq.dataCord) == 0 { // перевіряємо чи масив операцій пустий (чи він nil)
+		mq.pushCordSignal = make(chan struct{}) // ініціалізуємо канал
+		mq.mu.Unlock()                          // відкриваємо потік щоб взаємодіяти з каналом
+		<-mq.pushCordSignal                     // створює сигнал, після чого виконується push, який робить масив з однією операцією
+		mq.mu.Lock()                            // закриває потік, після чого знову робить перевірку масиву (теоретичний результат, масив буде не пустим)
+	}
+
+	var c Cord
+	if len(mq.dataCord) != 0 {
+		c = mq.pullCord()
+	}
+	return res, c //  повертає операцію яку потрібно виконати
 }
 
 // перевіряє чи черга пуста
@@ -111,4 +138,24 @@ func (mq *messageQueue) empty() bool {
 	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
 	return len(mq.data) == 0 // якщо черга пуста повертає true
+}
+
+func (mq *messageQueue) pushCord(c Cord) {
+	fmt.Println(c.X1, c.Y1, c.X2, c.Y2, "a")
+	mq.dataCord = append(mq.dataCord, c) // додає у масив координат координати
+
+	if mq.pushCordSignal != nil { // перевіряє чи був сигнал
+		close(mq.pushCordSignal) // якщо сигнал був, то закриває канал (припиняє передачу сигналу)
+		mq.pushCordSignal = nil  // вказуємо що канал немає сигналів
+	}
+}
+
+func (mq *messageQueue) pullCord() Cord {
+	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
+	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
+
+	res := mq.dataCord[0]                             //дістає операцію з  масиву
+	mq.dataCord[0] = Cord{X1: 0, Y1: 0, X2: 0, Y2: 0} //звільняє пам'ять у масиві де була взята координата
+	mq.dataCord = mq.dataCord[1:]                     // каже що масив починається  з другого аргументу
+	return res                                        //  повертає координати
 }

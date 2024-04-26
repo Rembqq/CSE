@@ -28,13 +28,13 @@ func TestLoop_Post(t *testing.T) {
 
 	var testOperation []string
 
-	l.Post(OperationFunc(func(t screen.Texture) {
+	l.Post(OperationFunc(func(t screen.Texture, c Cord) {
 		testOperation = append(testOperation, "op1")
-		l.Post(OperationFunc(func(t screen.Texture) {
+		l.Post(OperationFunc(func(t screen.Texture, c Cord) {
 			testOperation = append(testOperation, "op3")
 		}))
 	}))
-	l.Post(OperationFunc(func(t screen.Texture) {
+	l.Post(OperationFunc(func(t screen.Texture, c Cord) {
 		testOperation = append(testOperation, "op2")
 	}))
 
