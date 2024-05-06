@@ -36,18 +36,24 @@ func (l *Loop) Start(s screen.Screen) {
 	l.stop = make(chan struct{}) // ініціалізує канал
 
 	go func() {
+		fmt.Println("\nl.stopReq: ", l.stopReq)
+		fmt.Println("l.mq.empty()", l.mq.empty())
 		for !l.stopReq || !l.mq.empty() { // перевіряє чи не припиняти обробку повідомлень та чи масив операцій не пустий
+			fmt.Println("\ninner l.stopReq: ", l.stopReq)
+			fmt.Println("inner l.mq.empty(): ", l.mq.empty())
 			op, c := l.mq.pull() // дістає операцію з масиву
 
-			fmt.Println(len(l.mq.data), "p")
-			fmt.Println(len(l.mq.dataCord), "l")
-			fmt.Println(c.X1, c.Y1, c.X2, c.Y2, "m")
+			fmt.Println("len(l.mq.data): ", len(l.mq.data))
+			fmt.Println("len(l.mq.dataCord): ", len(l.mq.dataCord))
+			fmt.Println("Coordinates: ", c.X1, c.Y1, c.X2, c.Y2)
 
 			update := op.Do(l.next, c) // виконує операцію
-			fmt.Println(update)
+			fmt.Println("Command = update: ", update)
 			if update { // перевіряє чи відбулися зміни
+				fmt.Println("Updated #1")
 				l.Receiver.Update(l.next) // якщо відбулися оновлює текстуру
 				l.next, l.prev = l.prev, l.next
+				fmt.Println("Updated #2")
 			}
 		}
 		close(l.stop) // закриває канал, та припиняє потік
@@ -127,7 +133,12 @@ func (mq *messageQueue) pull() (Operation, Cord) {
 
 	var c Cord
 	if len(mq.dataCord) != 0 {
-		c = mq.pullCord()
+		//mq.mu.Unlock()
+		//c = mq.pullCord()
+		//mq.mu.Lock()
+		c = mq.dataCord[0]                                //дістає операцію з  масиву
+		mq.dataCord[0] = Cord{X1: 0, Y1: 0, X2: 0, Y2: 0} //звільняє пам'ять у масиві де була взята координата
+		mq.dataCord = mq.dataCord[1:]
 	}
 	return res, c //  повертає операцію яку потрібно виконати
 }
@@ -137,11 +148,11 @@ func (mq *messageQueue) empty() bool {
 	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
 	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
-	return len(mq.data) == 0 // якщо черга пуста повертає true
+	return len(mq.data)+len(mq.dataCord) == 0 // якщо черга пуста повертає true
 }
 
 func (mq *messageQueue) pushCord(c Cord) {
-	fmt.Println(c.X1, c.Y1, c.X2, c.Y2, "a")
+	fmt.Println("Pushed Coords: ", c.X1, c.Y1, c.X2, c.Y2)
 	mq.dataCord = append(mq.dataCord, c) // додає у масив координат координати
 
 	if mq.pushCordSignal != nil { // перевіряє чи був сигнал
@@ -150,7 +161,7 @@ func (mq *messageQueue) pushCord(c Cord) {
 	}
 }
 
-func (mq *messageQueue) pullCord() Cord {
+/*func (mq *messageQueue) pullCord() Cord {
 	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
 	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
 
@@ -158,4 +169,4 @@ func (mq *messageQueue) pullCord() Cord {
 	mq.dataCord[0] = Cord{X1: 0, Y1: 0, X2: 0, Y2: 0} //звільняє пам'ять у масиві де була взята координата
 	mq.dataCord = mq.dataCord[1:]                     // каже що масив починається  з другого аргументу
 	return res                                        //  повертає координати
-}
+}*/
