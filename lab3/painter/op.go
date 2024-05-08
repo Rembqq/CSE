@@ -11,6 +11,7 @@ type Operation interface {
 	Do(t screen.Texture) (ready bool)
 }
 
+// структура координат
 type Cord struct {
 	X1 float64
 	Y1 float64
@@ -32,6 +33,7 @@ var UpdateOp = updateOp{}
 type updateOp struct{}
 
 func (op updateOp) Do(t screen.Texture) bool {
+	PullCord()
 	return true
 }
 
@@ -42,34 +44,41 @@ func (f OperationFunc) Do(t screen.Texture) bool {
 	return false
 }
 
+// масив координат
 var CordList []Cord
 
+// запис в координат
 func PushCord(c Cord) {
 	CordList = append(CordList, c)
 }
 
+// отримання координат
 func PullCord() Cord {
 	res := CordList[0]
-	CordList[0] = Cord{X1: 0, Y1: 0, X2: 0, Y2: 0}
+	CordList[0] = Cord{}
 	CordList = CordList[1:]
 	return res
 }
 
+// чорний фон
 func BlackFill(t screen.Texture) {
 	PullCord()
 	t.Fill(t.Bounds(), color.Black, screen.Src)
 }
 
+// білий фон
 func WhiteFill(t screen.Texture) {
 	PullCord()
 	t.Fill(t.Bounds(), color.White, screen.Src)
 }
 
+// зелений фон
 func GreenFill(t screen.Texture) {
 	PullCord()
 	t.Fill(t.Bounds(), color.RGBA{G: 0xff, A: 0xff}, screen.Src)
 }
 
+// червона фігура х за центральними координатами
 func XFigureDraw(t screen.Texture) {
 	c := PullCord()
 	cordinateX := int(c.X1 * 800)
@@ -81,11 +90,17 @@ func XFigureDraw(t screen.Texture) {
 	RectFigureDraw(t, startX2, startY2, endX2, endY2, 200, 0, 0, 200)
 }
 
+// чорний прамокутник
 func BlackRect(t screen.Texture) {
 	c := PullCord()
-	RectFigureDraw(t, int(c.X1), int(c.Y1), int(c.X2), int(c.Y2), 0, 0, 0, 0)
+	sX1 := int(c.X1 * 800)
+	sY1 := int(c.Y1 * 800)
+	sX2 := int(c.X2 * 800)
+	sY2 := int(c.Y2 * 800)
+	RectFigureDraw(t, sX1, sY1, sX2, sY2, 0, 0, 0, 0)
 }
 
+// малює прямокутник
 func RectFigureDraw(t screen.Texture, x1, y1, x2, y2 int, r, g, b, a byte) {
 	var pos image.Rectangle
 	pos.Min.X = x1
