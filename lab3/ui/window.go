@@ -143,7 +143,7 @@ func (pw *Visualizer) handleEvent(e any, t screen.Texture) {
 
 func (pw *Visualizer) drawDefaultUI() {
 	pw.w.Fill(pw.sz.Bounds(), color.RGBA{R: 0, G: 200, B: 0, A: 200}, screen.Src)
-	pw.XFigureDraw(0.5, 0.5) // малює хрестик по центу  екрану
+	pw.XFigureDraw(0.5, 0.5) // малює хрестик по центу екрану
 }
 
 func (pw *Visualizer) XFigureDraw(x, y float32) { // малює хрестик по координатам що вказують на його центр
