@@ -15,9 +15,15 @@ func TestLoop_Post(t *testing.T) {
 	var (
 		l        Loop
 		receiver testReceiver
+		c        Cord
 	)
 
 	l.Receiver = &receiver
+
+	PushCord(c)
+	PushCord(c)
+	PushCord(c)
+	PushCord(c)
 
 	time.Sleep(3 * time.Second)
 	l.Start(testScreen{})

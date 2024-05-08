@@ -7,108 +7,97 @@ import (
 	"golang.org/x/exp/shiny/screen"
 )
 
-// Receiver отримує текстуру, яка була підготовлена в результаті виконання команд у циклі подій.
 type Receiver interface {
 	Update(t screen.Texture)
 }
 
-// Loop реалізує цикл подій для формування текстури отриманої через виконання операцій отриманих з внутрішньої черги.
 type Loop struct {
 	Receiver Receiver
 
-	next screen.Texture // текстура, яка зараз формується
-	prev screen.Texture // текстура, яка була відправлення останнього разу у Receiver
+	next screen.Texture
+	prev screen.Texture
 
 	mq messageQueue
 
-	stop    chan struct{} // створення каналу для закриття потоку обробки операцій
-	stopReq bool          // змінна що вказує на завершення виконнання операцій
+	stop    chan struct{}
+	stopReq bool
 }
 
 var size = image.Pt(800, 800)
 
-// запускає цикл подій. Цей метод потрібно запустити до того, як викликати на ньому будь-які інші методи.
 func (l *Loop) Start(s screen.Screen) {
 	l.next, _ = s.NewTexture(size)
 	l.prev, _ = s.NewTexture(size)
 
-	l.stop = make(chan struct{}) // ініціалізує канал
+	l.stop = make(chan struct{})
 
 	go func() {
-		for !l.stopReq || !l.mq.empty() { // перевіряє чи не припиняти обробку повідомлень та чи масив операцій не пустий
-			op := l.mq.pull() // дістає операцію з масиву
+		for !l.stopReq || !l.mq.empty() {
+			op := l.mq.pull()
 
-			update := op.Do(l.next) // виконує операцію
-			if update {             // перевіряє чи відбулися зміни
-				l.Receiver.Update(l.next) // якщо відбулися оновлює текстуру
+			update := op.Do(l.next)
+			if update {
+				l.Receiver.Update(l.next)
 				l.next, l.prev = l.prev, l.next
 			}
 		}
-		close(l.stop) // закриває канал, та припиняє потік
-		l.stop = nil  // кажемо що в каналі немає сигналів
+		close(l.stop)
+		l.stop = nil
 	}()
 }
 
-// додає нову операцію у внутрішню чергу.
 func (l *Loop) Post(op Operation) {
-	l.mq.push(op) //записує операцю в чергу
+	l.mq.push(op)
 }
 
-// сигналізує про необхідність завершити цикл та блокується до моменту його повної зупинки.
 func (l *Loop) StopAndWait() {
-	l.Post(OperationFunc(func(t screen.Texture) { //викликає функцію яка виконується
-		l.stopReq = true // вказує що потрібно завершити виконання операцій
+	l.Post(OperationFunc(func(t screen.Texture) {
+		l.stopReq = true
 	}))
-	<-l.stop // передає сигнал
+	<-l.stop
 }
 
-// черга повідомлень
 type messageQueue struct {
-	pushSignal chan struct{} //створення каналу для сигналу, потрібен щоб програма при доставанні
-	// операцій з черги не зверталася до пустого масиву операцій
+	pushSignal chan struct{}
 
-	mu sync.Mutex // для роботи з потоками (закриття, відкритя)
+	mu sync.Mutex
 
-	data []Operation // масив операцій де створюється черга
+	data []Operation
 }
 
-// записує повідомлення у чергу
 func (mq *messageQueue) push(op Operation) {
-	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
-	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
-	// потрібно для коректної взаємодії між потоками
-	// інакше потоки будуть пошкоджувати один одному данні
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
 
-	mq.data = append(mq.data, op) // додає у масив операцій операцію
+	mq.data = append(mq.data, op)
 
-	if mq.pushSignal != nil { // перевіряє чи був сигнал
-		close(mq.pushSignal) // якщо сигнал був, то закриває канал (припиняє передачу сигналу)
-		mq.pushSignal = nil  // вказуємо що канал немає сигналів
+	if mq.pushSignal != nil {
+		close(mq.pushSignal)
+		mq.pushSignal = nil
 	}
 }
 
-// дістає повідомлення з черги
 func (mq *messageQueue) pull() Operation {
-	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
-	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
 
-	for len(mq.data) == 0 { // перевіряємо чи масив операцій пустий (чи він nil)
-		mq.pushSignal = make(chan struct{}) // ініціалізуємо канал
-		mq.mu.Unlock()                      // відкриваємо потік щоб взаємодіяти з каналом
-		<-mq.pushSignal                     // створює сигнал, після чого виконується push, який робить масив з однією операцією
-		mq.mu.Lock()                        // закриває потік, після чого знову робить перевірку масиву (теоретичний результат, масив буде не пустим)
+	for len(mq.data) == 0 {
+		mq.pushSignal = make(chan struct{})
+		mq.mu.Unlock()
+		<-mq.pushSignal
+		mq.mu.Lock()
 	}
 
-	res := mq.data[0]     //дістає операцію з  масиву
-	mq.data[0] = nil      //звільняє пам'ять у масиві де була взята операція
-	mq.data = mq.data[1:] // каже що масив починається  з другого аргументу
-	return res            //  повертає операцію яку потрібно виконати
+	res := mq.data[0]
+	mq.data[0] = nil
+	mq.data = mq.data[1:]
+
+	return res
 }
 
-// перевіряє чи черга пуста
 func (mq *messageQueue) empty() bool {
-	mq.mu.Lock()         // якщо цю функцію викликають два потоки, то той потік який швидше виконав закриття,
-	defer mq.mu.Unlock() //не дозволяє іншому взаємодіяти з функцією поки не закінчіть (відкриє)
+	mq.mu.Lock()
+	defer mq.mu.Unlock()
 
-	return len(mq.data) == 0 // якщо черга пуста повертає true
+	return len(mq.data) == 0
 }

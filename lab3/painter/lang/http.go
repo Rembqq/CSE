@@ -18,11 +18,17 @@ func HttpHandler(loop *painter.Loop, p *Parser) http.Handler {
 			in = strings.NewReader(r.URL.Query().Get("cmd"))
 		}
 
-		cmds, err := p.Parse(in)
+		cmds, cords, err := p.Parse(in)
 		if err != nil {
 			log.Printf("Bad script: %s", err)
 			rw.WriteHeader(http.StatusBadRequest)
 			return
+		}
+
+		if len(cords) != 0 {
+			for i := 0; i <= len(cords)-1; i++ {
+				painter.PushCord(cords[i])
+			}
 		}
 
 		loop.Post(painter.OperationList(cmds))
