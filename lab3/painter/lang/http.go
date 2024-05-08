@@ -27,9 +27,10 @@ func HttpHandler(loop *painter.Loop, p *Parser) http.Handler {
 
 		if len(cords) != 0 {
 			for i := 0; i <= len(cords)-1; i++ {
-				loop.PostCord(cords[i])
+				painter.PushCord(cords[i])
 			}
 		}
+
 		loop.Post(painter.OperationList(cmds))
 		rw.WriteHeader(http.StatusOK)
 	})
