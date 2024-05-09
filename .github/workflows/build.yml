@@ -21,11 +21,22 @@ jobs:
       with:
         go-version: '1.22'
 
-    - name: Build
-      run:  |
+    - name: Build lab2
+      run: |
         cd lab2
         go build -v ./...
-    - name: Test
+
+    - name: Test lab2
       run: |
-        cd lab2  # Змінюємо поточну папку на lab2
+        cd lab2
+        make test
+
+    - name: Build lab3
+      run: |
+        cd lab3
+        go build -v ./...
+
+    - name: Test lab3
+      run: |
+        cd lab3
         make test
