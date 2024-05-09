@@ -51,8 +51,16 @@ func (p *Parser) Parse(in io.Reader) ([]painter.Operation, []painter.Cord, error
 	// масив координат очищення
 	var cordReset []painter.Cord
 
+	//var lastBgColour painter.OperationFunc
+	//var lastBgColourCords painter.Cord
+
 	scanner := bufio.NewScanner(in)
 	scanner.Split(bufio.ScanLines)
+	//lastBgColour = nil
+	//lastBgColourCords.X1 = 0
+	//lastBgColourCords.Y1 = 0
+	//lastBgColourCords.X2 = 0
+	//lastBgColourCords.Y2 = 0
 	for scanner.Scan() {
 		commandLine := scanner.Text()
 		op, x1, y1, x2, y2 := p.ParseText(commandLine)
@@ -60,9 +68,13 @@ func (p *Parser) Parse(in io.Reader) ([]painter.Operation, []painter.Cord, error
 		case "white":
 			colorWindow = append(colorWindow, painter.OperationFunc(painter.WhiteFill))
 			cordWindow = append(cordWindow, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
+			//lastBgColour = painter.WhiteFill
+			//lastBgColourCords = painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2}
 		case "green":
 			colorWindow = append(colorWindow, painter.OperationFunc(painter.GreenFill))
 			cordWindow = append(cordWindow, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
+			//lastBgColour = painter.GreenFill
+			//lastBgColourCords = painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2}
 		case "bgrect":
 			rectBlack = append(rectBlack, painter.OperationFunc(painter.BlackRect))
 			cordRect = append(cordRect, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
@@ -84,6 +96,12 @@ func (p *Parser) Parse(in io.Reader) ([]painter.Operation, []painter.Cord, error
 		case "reset":
 			colorReset = append(colorReset, painter.OperationFunc(painter.BlackFill))
 			cordReset = append(cordReset, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
+			//if lastBgColour != nil {
+			//	colorWindow = append(colorWindow, lastBgColour)
+			//	cordWindow = append(cordWindow, lastBgColourCords)
+			//}
+			figureX = append(figureX, painter.OperationFunc(painter.BlackFill))
+			cordFigureX = append(cordFigureX, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
 		case "update":
 			updatePicture = append(updatePicture, painter.UpdateOp)
 			cordUpdate = append(cordUpdate, painter.Cord{X1: x1, Y1: y1, X2: x2, Y2: y2})
@@ -93,13 +111,13 @@ func (p *Parser) Parse(in io.Reader) ([]painter.Operation, []painter.Cord, error
 	res = append(res, colorWindow...)
 	res = append(res, rectBlack...)
 	res = append(res, figureX...)
-	res = append(res, colorReset...)
+	//res = append(res, colorReset...)
 	res = append(res, updatePicture...)
 
 	cordIn = append(cordIn, cordWindow...)
 	cordIn = append(cordIn, cordRect...)
 	cordIn = append(cordIn, cordFigureX...)
-	cordIn = append(cordIn, cordReset...)
+	//cordIn = append(cordIn, cordReset...)
 	cordIn = append(cordIn, cordUpdate...)
 
 	// зберігання попередніх операцій та координат
