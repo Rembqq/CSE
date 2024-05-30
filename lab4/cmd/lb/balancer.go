@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
@@ -9,8 +11,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Rembqq/CSE/lab4/httptools"
-	"github.com/Rembqq/CSE/lab4/signal"
+	"github.com/Rembqq/CSE/httptools"
+	"github.com/Rembqq/CSE/signal"
 )
 
 var (
@@ -84,6 +86,13 @@ func forward(dst string, rw http.ResponseWriter, r *http.Request) error {
 	}
 }
 
+func hash(s string) int {
+	h := sha256.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	return int(binary.BigEndian.Uint32(bs[:4]))
+}
+
 func main() {
 	flag.Parse()
 
@@ -99,7 +108,9 @@ func main() {
 
 	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		// TODO: Рееалізуйте свій алгоритм балансувальника.
-		forward(serversPool[0], rw, r)
+		clientAddr := r.RemoteAddr
+		serverIndex := hash(clientAddr) % len(serversPool)
+		forward(serversPool[serverIndex], rw, r)
 	}))
 
 	log.Println("Starting load balancer...")

@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Rembqq/CSE/lab4/httptools"
-	"github.com/Rembqq/CSE/lab4/signal"
+	"github.com/Rembqq/CSE/httptools"
+	"github.com/Rembqq/CSE/signal"
 )
 
 var port = flag.Int("port", 8080, "server port")

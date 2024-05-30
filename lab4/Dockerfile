@@ -12,6 +12,6 @@ FROM alpine:latest
 WORKDIR /opt/lab-4
 COPY entry.sh /opt/lab-4/
 COPY --from=build /go/bin/* /opt/lab-4
-RUN ls /opt/lba-4
+RUN ls /opt/lab-4
 ENTRYPOINT ["/opt/lab-4/entry.sh"]
 CMD ["server"]
