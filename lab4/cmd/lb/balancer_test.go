@@ -1,94 +1,88 @@
 package main
 
 import (
-	"github.com/Rembqq/CSE/httptools"
 	. "gopkg.in/check.v1"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-//var (
-//	serversPool = []string{
-//		"server1:8080",
-//		"server2:8080",
-//		"server3:8080",
-//	}
-//)
-
 type MySuite struct{}
+
+var _ = Suite(&MySuite{})
 
 func Test(t *testing.T) {
 	TestingT(t)
 }
 
+func (s *MySuite) TestHash(c *C) {
+	input := "127.0.0.1:8080"
+	expected := hash(input)
+	c.Assert(expected, Equals, hash(input))
+
+	// Checking for other inputs
+	input2 := "192.168.1.1:8080"
+	c.Assert(hash(input), Not(Equals), hash(input2))
+}
+
 func (s *MySuite) TestBalancer(c *C) {
-	// TODO: Реалізуйте юніт-тест для балансувальникка.
-
-	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		clientAddr := r.RemoteAddr
-		serverIndex := hash(clientAddr) % len(serversPool)
-		expectedIndex := calculateExpectedIndex(clientAddr)
-		c.Assert(serverIndex, Equals, expectedIndex)
-	}))
-	//frontend.Start()
-}
-
-func calculateExpectedIndex(clientAddr string) int {
-	return hash(clientAddr) % len(serversPool)
-}
-
-func testScheme() string {
-	if *https {
-		return "https"
+	// Test different RemoteAddr for different serverIndex
+	testCases := []struct {
+		remoteAddr    string
+		expectedIndex int
+	}{
+		{"127.0.0.1:8080", hash("127.0.0.1:8080") % len(serversPool)},
+		{"192.168.1.1:8080", hash("192.168.1.1:8080") % len(serversPool)},
+		{"10.0.0.1:8080", hash("10.0.0.1:8080") % len(serversPool)},
 	}
-	return "http"
+
+	// tc - iterator of testCases (test case)
+	for _, tc := range testCases {
+		// Creates new GET request on http://localhost:8090
+		req, err := http.NewRequest("GET", "http://localhost:8090", nil)
+		// Checks for mistakes
+		c.Assert(err, IsNil)
+		// initializes client address as remoteAddr in tc
+		req.RemoteAddr = tc.remoteAddr
+
+		// http.ResponseWriter analogy in httptest package
+		rw := httptest.NewRecorder()
+
+		handler := http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+			clientAddr := r.RemoteAddr
+			serverIndex := hash(clientAddr) % len(serversPool)
+			c.Assert(serverIndex, Equals, tc.expectedIndex)
+		})
+
+		// imitation of processing an HTTP request by a server
+		handler.ServeHTTP(rw, req)
+
+		c.Assert(rw.Code, Equals, http.StatusOK)
+		c.Assert(rw.Body.String(), Matches, ".*")
+	}
 }
 
-//func testHealth(dst string) bool {
-//	ctx, _ := context.WithTimeout(context.Background(), timeout)
-//	req, _ := http.NewRequestWithContext(ctx, "GET",
-//		fmt.Sprintf("%s://%s/health", testScheme(), dst), nil)
-//	resp, err := http.DefaultClient.Do(req)
-//	if err != nil {
-//		return false
-//	}
-//	if resp.StatusCode != http.StatusOK {
-//		return false
-//	}
-//	return true
-//}
-//
-//func testForward(dst string, rw http.ResponseWriter, r *http.Request) error {
-//	ctx, _ := context.WithTimeout(r.Context(), timeout)
-//	fwdRequest := r.Clone(ctx)
-//	fwdRequest.RequestURI = ""
-//	fwdRequest.URL.Host = dst
-//	fwdRequest.URL.Scheme = testScheme()
-//	fwdRequest.Host = dst
-//
-//	resp, err := http.DefaultClient.Do(fwdRequest)
-//	if err == nil {
-//		for k, values := range resp.Header {
-//			for _, value := range values {
-//				rw.Header().Add(k, value)
-//			}
-//		}
-//		if *traceEnabled {
-//			rw.Header().Set("lb-from", dst)
-//		}
-//		log.Println("fwd", resp.StatusCode, resp.Request.URL)
-//		rw.WriteHeader(resp.StatusCode)
-//		defer resp.Body.Close()
-//		_, err := io.Copy(rw, resp.Body)
-//		if err != nil {
-//			log.Printf("Failed to write response: %s", err)
-//		}
-//		return nil
-//	} else {
-//		log.Printf("Failed to get response from %s: %s", dst, err)
-//		rw.WriteHeader(http.StatusServiceUnavailable)
-//		return err
-//	}
-//}
+func (s *MySuite) TestForward(c *C) {
+	// Creating test server to imitate back-end server
+	backendServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte("Back-end imitator message"))
+	}))
+	defer backendServer.Close()
 
-var _ = Suite(&MySuite{})
+	// Update serversPool to use a test server
+	serversPool = []string{backendServer.Listener.Addr().String()}
+
+	// Create HTTP-request for testing
+	req, err := http.NewRequest("GET", "http://localhost:8090", nil)
+	c.Assert(err, IsNil)
+
+	// http.ResponseWriter analogy in httptest package
+	rw := httptest.NewRecorder()
+
+	// Call the forward function and check the result
+	err = forward(serversPool[0], rw, req)
+	c.Assert(err, IsNil)
+	c.Assert(rw.Code, Equals, http.StatusOK)
+	c.Assert(rw.Body.String(), Equals, "Back-end imitator message")
+}
