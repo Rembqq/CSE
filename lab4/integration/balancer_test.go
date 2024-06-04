@@ -35,14 +35,14 @@ type MySuite struct{}
 var _ = check.Suite(&MySuite{})
 
 func (s *MySuite) TestBalanser(c *check.C) {
-	server := httptools.CreateServer(*port, mainserv.h)
+	server := httptools.CreateServer(*port, main.h)
 	server.Start()
 	signal.WaitForTerminationSignal()
 
 	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		clientAddr := r.RemoteAddr
-		serverIndex := mainserv.hash(clientAddr) % len(mainserv.serversPoolTrue)
-		mainserv.forward(mainserv.serversPoolTrue[serverIndex], rw, r)
+		serverIndex := main.hash(clientAddr) % len(main.serversPoolTrue)
+		main.forward(main.serversPoolTrue[serverIndex], rw, r)
 	}))
 
 	log.Println("Starting load balancer...")

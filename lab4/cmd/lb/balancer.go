@@ -1,4 +1,4 @@
-package mainserv
+package main
 
 import (
 	"context"
