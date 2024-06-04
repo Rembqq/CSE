@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"flag"
 	"fmt"
 	"io"
@@ -28,6 +30,7 @@ var (
 		"server2:8080",
 		"server3:8080",
 	}
+	serversPoolTrue = []string{}
 )
 
 func scheme() string {
@@ -84,22 +87,33 @@ func forward(dst string, rw http.ResponseWriter, r *http.Request) error {
 	}
 }
 
+func hash(s string) int {
+	h := sha256.New()
+	h.Write([]byte(s))
+	bs := h.Sum(nil)
+	return int(binary.BigEndian.Uint32(bs[:4]))
+}
+
 func main() {
 	flag.Parse()
 
-	// TODO: Використовуйте дані про стан сервреа, щоб підтримувати список тих серверів, яким можна відправляти ззапит.
-	for _, server := range serversPool {
-		server := server
-		go func() {
-			for range time.Tick(10 * time.Second) {
-				log.Println(server, health(server))
+	go func() {
+		for range time.Tick(10 * time.Second) {
+			serversPoolTrue = nil
+			for _, server := range serversPool {
+				healthBool := health(server)
+				log.Println(server, healthBool)
+				if healthBool == true {
+					serversPoolTrue = append(serversPoolTrue, server)
+				}
 			}
-		}()
-	}
+		}
+	}()
 
 	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		// TODO: Рееалізуйте свій алгоритм балансувальника.
-		forward(serversPool[0], rw, r)
+		clientAddr := r.RemoteAddr
+		serverIndex := hash(clientAddr) % len(serversPoolTrue)
+		forward(serversPoolTrue[serverIndex], rw, r)
 	}))
 
 	log.Println("Starting load balancer...")
