@@ -1,49 +1,82 @@
 package integration
 
 import (
+	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"testing"
 	"time"
+
+	"gopkg.in/check.v1"
+
+	"github.com/Rembqq/CSE/httptools"
+	"github.com/Rembqq/CSE/signal"
 )
 
 const baseAddress = "http://balancer:8090"
 
 var (
-	client = http.Client{
-		Timeout: 3 * time.Second,
-	}
 	i int = 0
 )
 
-func TestBalancer(t *testing.T) {
+func ImplemTestBalancer(t *testing.T) {
 	if _, exists := os.LookupEnv("INTEGRATION_TEST"); !exists {
 		t.Skip("Integration test is not enabled")
 	}
+	check.TestingT(t)
+}
 
+type MySuite struct{}
+
+var _ = check.Suite(&MySuite{})
+
+func (s *MySuite) TestBalanser(c *check.C) {
+  client := new(http.Client)
+	client.Timeout = 10 * time.Second
 	for range time.Tick(2 * time.Second) {
 		if i != 20 {
-			resp1, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/some-data", baseAddress), nil)
-			if err != nil {
-				t.Error(err)
+			  resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
+			  if err != nil {
+				  b.Error(err)
+			  } else {
+				  resp.Header.Get("lb-from")
+			  }
 			}
-
-			resp2, err2 := client.Do(resp1)
-			if err2 != nil {
-				t.Error(err2)
-				return
-			}
-			defer resp2.Body.Close()
-
-			t.Logf("response from [%s]", resp2.Header.Get("lb-from"))
-			i++
-		} else {
-			return
-		}
-	}
 }
 
 func BenchmarkBalancer(b *testing.B) {
-
+	client := new(http.Client)
+	client.Timeout = 10 * time.Second
+	b.Run("small", func(b *testing.B) {
+		for i := 0; i <= 10; i++ {
+			resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
+			if err != nil {
+				b.Error(err)
+			} else {
+				resp.Header.Get("lb-from")
+			}
+		}
+	})
+	b.Run("medium", func(b *testing.B) {
+		for i := 0; i <= 50; i++ {
+			resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
+			if err != nil {
+				b.Error(err)
+			} else {
+				resp.Header.Get("lb-from")
+			}
+		}
+	})
+	b.Run("large", func(b *testing.B) {
+		for i := 0; i <= 100; i++ {
+			resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
+			if err != nil {
+				b.Error(err)
+			} else {
+				resp.Header.Get("lb-from")
+			}
+		}
+	})
 }

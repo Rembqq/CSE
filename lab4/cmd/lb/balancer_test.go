@@ -74,6 +74,7 @@ func (s *MySuite) TestHash(c *check.C) {
 }
 
 func (s *MySuite) TestForward(c *check.C) {
+
 	// Creating test server to imitate back-end server
 	backendServer := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
@@ -88,11 +89,17 @@ func (s *MySuite) TestForward(c *check.C) {
 	req, err := http.NewRequest("GET", "http://localhost:8090", nil)
 	c.Check(err, check.IsNil)
 
+	c.Assert(err, check.IsNil)
+
 	// http.ResponseWriter analogy in httptest package
 	rw := httptest.NewRecorder()
 
 	// Call the forward function and check the result
 	err = forward(serversPool[0], rw, req)
+	c.Check(err, check.IsNil)
+	c.Check(rw.Code, check.Equals, http.StatusOK)
+	c.Check(rw.Body.String(), check.Equals, "Back-end imitator message")
+
 	c.Check(err, check.IsNil)
 	c.Check(rw.Code, check.Equals, http.StatusOK)
 	c.Check(rw.Body.String(), check.Equals, "Back-end imitator message")
