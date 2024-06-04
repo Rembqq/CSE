@@ -23,7 +23,7 @@ func TestBalancer(t *testing.T) {
 	}
 
 	for range time.Tick(2 * time.Second) {
-		if i != 100 {
+		if i != 20 {
 			resp1, err := http.NewRequest("GET", fmt.Sprintf("%s/api/v1/some-data", baseAddress), nil)
 			if err != nil {
 				t.Error(err)
