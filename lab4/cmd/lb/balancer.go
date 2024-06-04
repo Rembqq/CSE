@@ -1,4 +1,4 @@
-package main
+package mainserv
 
 import (
 	"context"
@@ -20,16 +20,17 @@ var (
 	timeoutSec = flag.Int("timeout-sec", 3, "request timeout time in seconds")
 	https      = flag.Bool("https", false, "whether backends support HTTPs")
 
-	traceEnabled = flag.Bool("trace", false, "whether to include tracing information into responses")
+	traceEnabled = flag.Bool("trace", true, "whether to include tracing information into responses")
 )
 
 var (
 	timeout     = time.Duration(*timeoutSec) * time.Second
 	serversPool = []string{
-		"server1:8080",
-		"server2:8080",
-		"server3:8080",
+		"http://server1:8080",
+		"http://server2:8080",
+		"http://server3:8080",
 	}
+	serversPoolTrue = []string{}
 )
 
 func scheme() string {
@@ -96,21 +97,23 @@ func hash(s string) int {
 func main() {
 	flag.Parse()
 
-	// TODO: Використовуйте дані про стан сервреа, щоб підтримувати список тих серверів, яким можна відправляти ззапит.
-	for _, server := range serversPool {
-		server := server
-		go func() {
-			for range time.Tick(10 * time.Second) {
-				log.Println(server, health(server))
+	go func() {
+		for range time.Tick(10 * time.Second) {
+			serversPoolTrue = nil
+			for _, server := range serversPool {
+				healthBool := health(server)
+				log.Println(server, healthBool)
+				if healthBool == true {
+					serversPoolTrue = append(serversPoolTrue, server)
+				}
 			}
-		}()
-	}
+		}
+	}()
 
 	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-
 		clientAddr := r.RemoteAddr
-		serverIndex := hash(clientAddr) % len(serversPool)
-		forward(serversPool[serverIndex], rw, r)
+		serverIndex := hash(clientAddr) % len(serversPoolTrue)
+		forward(serversPoolTrue[serverIndex], rw, r)
 	}))
 
 	log.Println("Starting load balancer...")
