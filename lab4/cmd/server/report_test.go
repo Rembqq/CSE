@@ -1,4 +1,4 @@
-package main
+package mainserv
 
 import (
 	"net/http/httptest"
