@@ -15,9 +15,7 @@ import (
 	"github.com/Rembqq/CSE/signal"
 )
 
-const baseAddress = "http://localhost:8090" /*"http://balancer:8090"*/
-var port = flag.Int("port", 8080, "server port")
-var traceEnabled = flag.Bool("trace", true, "whether to include tracing information into responses")
+const baseAddress = "http://balancer:8090"
 
 var (
 	i int = 0
@@ -35,37 +33,17 @@ type MySuite struct{}
 var _ = check.Suite(&MySuite{})
 
 func (s *MySuite) TestBalanser(c *check.C) {
-	server := httptools.CreateServer(*port, main.h)
-	server.Start()
-	signal.WaitForTerminationSignal()
-
-	frontend := httptools.CreateServer(*port, http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
-		clientAddr := r.RemoteAddr
-		serverIndex := main.hash(clientAddr) % len(main.serversPoolTrue)
-		main.forward(main.serversPoolTrue[serverIndex], rw, r)
-	}))
-
-	log.Println("Starting load balancer...")
-	log.Printf("Tracing support enabled: %t", *traceEnabled)
-	frontend.Start()
-	signal.WaitForTerminationSignal()
-
-	client := new(http.Client)
+  client := new(http.Client)
 	client.Timeout = 10 * time.Second
-
-	for range time.Tick(1 * time.Second) {
+	for range time.Tick(2 * time.Second) {
 		if i != 20 {
-			resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
-			if err != nil {
-				c.Error(err)
-			} else {
-				c.Logf("response from [%s]", resp.Header.Get("lb-from"))
+			  resp, err := client.Get(fmt.Sprintf("%s/api/v1/some-data", baseAddress))
+			  if err != nil {
+				  b.Error(err)
+			  } else {
+				  resp.Header.Get("lb-from")
+			  }
 			}
-			i++
-		} else {
-			return
-		}
-	}
 }
 
 func BenchmarkBalancer(b *testing.B) {
