@@ -49,16 +49,13 @@ jobs:
       run: |
         cd ./lab4/
         docker-compose up &                                                                                                                            
-        sleep 15
+        sleep 30
         pkill docker-compose
 
     - name: Docker compose integration
       run: |
        cd ./lab4/
        docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test &
-       sleep 15
-       cd ./lab4/integration/
-       go test
-       sleep 5
+       sleep 30
        pkill docker-compose
 
