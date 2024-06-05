@@ -28,7 +28,7 @@ jobs:
     - name: Unit test
       run: |
         cd ./lab4/cmd/lb/
-        make test
+        go test
 
   build_integrate_test:
     runs-on: ubuntu-latest
