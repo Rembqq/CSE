@@ -23,20 +23,26 @@ jobs:
       uses: docker/setup-buildx-action@v1
 
     - name: Build Docker
-      run: docker build -f Dockerfile -t lab-4:v1 .
+      run: |
+       cd lab4/
+       docker build -f Dockerfile -t lab-4:v1 .
 
     - name: Docker compose
-      run: docker-compose up
+      run: |
+       cd lab4/
+       docker-compose up
 
     - name: Unit test
       run: |
-        cd cmd/lb/
+        cd lab4/cmd/lb/
         go test
 
     - name: Docker compose integration
-      run: docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test
+      run: |
+       cd lab4/
+       docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test
 
     - name: Integration test
       run: |
-        cd integration/
+        cd lab4/integration/
         go test
