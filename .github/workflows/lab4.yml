@@ -12,20 +12,31 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
+
     steps:
-    - uses: actions/checkout@v3
-
-    - name: Set up Go
-      uses: actions/setup-go@v4
+    - name: Cloning lab4
+      uses: actions/checkout@v2
       with:
-        go-version: '1.22'
+        path: lab4
 
-    - name: Build lab4
-      run: |
-        cd lab4
-        go build -v ./...
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v1
 
-    - name: Test lab4
+    - name: Build Docker
+      run: docker build -f Dockerfile -t lab-4:v1 .
+
+    - name: Docker compose
+      run: docker-compose up
+
+    - name: Unit test
       run: |
-        cd lab4
-        make test
+        cd cmd/lb/
+        go test
+
+    - name: Docker compose integration
+      run: docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test
+
+    - name: Integration test
+      run: |
+        cd integration/
+        go test
