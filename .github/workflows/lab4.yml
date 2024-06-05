@@ -20,6 +20,11 @@ jobs:
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 
+    - name: Unit test
+      run: |
+        cd ./lab4/cmd/lb/
+        go test
+      
     - name: Build Docker
       run: |
        cd ./lab4/
@@ -27,20 +32,22 @@ jobs:
 
     - name: Docker compose
       run: |
-       cd ./lab4/
-       docker-compose up
-
-    - name: Unit test
-      run: |
-        cd ./lab4/cmd/lb/
-        go test
+        cd ./lab4/
+        docker-compose up &                                                                                                                            
+        sleep 5
+        go run ./lab4/cmd/client/client.go &                                                                                                                   
+        sleep 10
+        pkill client.go
+        sleep 5
+        pkill docker-compose
 
     - name: Docker compose integration
       run: |
        cd ./lab4/
-       docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test
+       docker-compose -f docker-compose.yaml -f docker-compose.test.yaml up --exit-code-from test &
+       sleep 15
+       cd ./lab4/integration/
+       go test
+       sleep 5
+       pkill docker-compose
 
-    - name: Integration test
-      run: |
-        cd ./lab4/integration/
-        go test
