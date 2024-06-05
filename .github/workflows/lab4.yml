@@ -49,11 +49,7 @@ jobs:
       run: |
         cd ./lab4/
         docker-compose up &                                                                                                                            
-        sleep 5
-        go run ./lab4/cmd/client/client.go &                                                                                                                   
-        sleep 10
-        pkill client.go
-        sleep 5
+        sleep 15
         pkill docker-compose
 
     - name: Docker compose integration
